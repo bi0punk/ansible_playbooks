@@ -1,0 +1,25 @@
+---
+- name: Configurar UFW
+  hosts: all
+  become: yes
+  tasks:
+    - name: Permitir conexiones SSH
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Permitir conexiones HTTP
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Permitir conexiones HTTPS
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Habilitar UFW
+      ufw:
+        state: enabled

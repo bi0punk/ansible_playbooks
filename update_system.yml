@@ -1,0 +1,12 @@
+---
+- name: Actualizar los paquetes del sistema
+  hosts: all
+  become: yes
+  tasks:
+    - name: Actualizar la caché de apt
+      apt:
+        update_cache: yes
+
+    - name: Actualizar todos los paquetes
+      apt:
+        upgrade: dist

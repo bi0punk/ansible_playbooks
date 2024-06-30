@@ -1,0 +1,4 @@
+[servers]
+
+server1 ansible_host=192.168.1.87 ansible_user=ansible_user
+server2 ansible_host=192.168.1.83 ansible_user=ansible_user ansible_port=2223

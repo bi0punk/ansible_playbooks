@@ -1,0 +1,17 @@
+---
+- name: Crear un nuevo usuario
+  hosts: all
+  become: yes
+  vars:
+    new_user: example_user
+  tasks:
+    - name: Crear el usuario
+      user:
+        name: "{{ new_user }}"
+        state: present
+        groups: sudo
+
+    - name: Establecer contraseña para el nuevo usuario
+      user:
+        name: "{{ new_user }}"
+        password: "{{ 'YourSecurePasswordHere' | password_hash('sha512') }}"

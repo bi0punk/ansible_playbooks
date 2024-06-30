@@ -1,0 +1,25 @@
+---
+- name: Desplegar una aplicación web simple
+  hosts: all
+  become: yes
+  tasks:
+    - name: Instalar dependencias
+      apt:
+        name:
+          - git
+          - python3-pip
+        state: present
+
+    - name: Clonar el repositorio de la aplicación
+      git:
+        repo: 'https://github.com/tu_usuario/tu_repositorio.git'
+        dest: /opt/mi_app
+
+    - name: Instalar dependencias de la aplicación
+      pip:
+        requirements: /opt/mi_app/requirements.txt
+
+    - name: Ejecutar la aplicación
+      shell: |
+        cd /opt/mi_app
+        nohup python3 app.py &
