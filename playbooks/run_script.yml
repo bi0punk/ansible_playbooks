@@ -1,0 +1,6 @@
+- name: Run a single script (from ./scripts/)
+  hosts: "{{ target | default('linux') }}"
+  gather_facts: true
+  become: true
+  roles:
+    - role: script_runner

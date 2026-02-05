@@ -1,0 +1,2 @@
+# Entry point simple
+- import_playbook: run_script.yml

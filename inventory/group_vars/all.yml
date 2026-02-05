@@ -1,0 +1,5 @@
+project_name: "ansible-scripts-project"
+remote_scripts_dir: "/opt/ops/scripts"
+remote_logs_dir: "/var/log/ops-scripts"
+script_timeout_sec: 900
+script_workdir_default: "/tmp"

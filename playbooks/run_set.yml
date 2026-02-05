@@ -1,0 +1,34 @@
+- name: Run a set of scripts (defined in group_vars or defaults)
+  hosts: "{{ target | default('linux') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    # Puedes sobreescribir esto desde inventory/group_vars o -e
+    script_set_map:
+      baseline:
+        - { script: "bash/hello.sh", script_args: "" }
+        - { script: "bash/disk_report.sh", script_args: "" }
+      sysinfo:
+        - { script: "python/sysinfo.py", script_args: "", ensure_python3: true }
+      apps:
+        - { script: "bash/run_app_example.sh", script_args: "" }
+
+  tasks:
+    - name: Validar set
+      ansible.builtin.assert:
+        that:
+          - set_name is defined
+          - set_name in script_set_map
+        fail_msg: "Usa -e set_name=baseline (o sysinfo/apps). Disponibles: {{ script_set_map.keys() | list }}"
+
+    - name: Ejecutar set
+      ansible.builtin.include_role:
+        name: script_runner
+      vars:
+        script: "{{ item.script }}"
+        script_args: "{{ item.script_args | default('') }}"
+        ensure_python3: "{{ item.ensure_python3 | default(false) }}"
+        script_env: "{{ item.script_env | default({}) }}"
+        script_workdir: "{{ item.script_workdir | default(script_workdir_default) }}"
+      loop: "{{ script_set_map[set_name] }}"

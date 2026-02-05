@@ -1,0 +1,95 @@
+- name: Validar que se haya especificado script
+  ansible.builtin.assert:
+    that:
+      - script | length > 0
+    fail_msg: "Debes pasar -e script='bash/hello.sh' (ruta relativa a ./scripts/)"
+
+- name: Definir rutas
+  ansible.builtin.set_fact:
+    local_script_path: "{{ playbook_dir }}/../scripts/{{ script }}"
+    remote_script_path: "{{ remote_scripts_dir }}/{{ script | basename }}"
+    ts: "{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Verificar que el script exista en el control node
+  delegate_to: localhost
+  become: false
+  ansible.builtin.stat:
+    path: "{{ local_script_path }}"
+  register: local_script_stat
+
+- name: Fallar si no existe
+  ansible.builtin.assert:
+    that:
+      - local_script_stat.stat.exists
+      - local_script_stat.stat.isreg
+    fail_msg: "No existe el script en: {{ local_script_path }}"
+
+- name: Asegurar directorios remotos
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ script_owner }}"
+    group: "{{ script_group }}"
+    mode: "0755"
+  loop:
+    - "{{ remote_scripts_dir }}"
+    - "{{ remote_logs_dir }}"
+
+- name: Instalar python3 si se pidió (opcional)
+  when: ensure_python3 | bool
+  ansible.builtin.package:
+    name: python3
+    state: present
+
+- name: Copiar script al host
+  ansible.builtin.copy:
+    src: "{{ local_script_path }}"
+    dest: "{{ remote_script_path }}"
+    owner: "{{ script_owner }}"
+    group: "{{ script_group }}"
+    mode: "{{ script_mode }}"
+
+- name: Ejecutar script (async)
+  ansible.builtin.command: >
+    {{ remote_script_path }} {{ script_args }}
+  args:
+    chdir: "{{ script_workdir }}"
+  environment: "{{ script_env }}"
+  register: script_run
+  changed_when: true
+  async: "{{ script_timeout_sec }}"
+  poll: 0
+
+- name: Esperar resultado
+  ansible.builtin.async_status:
+    jid: "{{ script_run.ansible_job_id }}"
+  register: script_status
+  until: script_status.finished
+  retries: "{{ (script_timeout_sec // 5) | int }}"
+  delay: 5
+
+- name: Guardar salida en logs remotos
+  ansible.builtin.copy:
+    dest: "{{ remote_logs_dir }}/{{ script | basename }}_{{ ts }}.log"
+    content: |
+      === SCRIPT: {{ script }}
+      === HOST: {{ inventory_hostname }}
+      === TIME: {{ ansible_date_time.iso8601 }}
+      === RC: {{ script_status.rc | default('n/a') }}
+
+      --- STDOUT ---
+      {{ script_status.stdout | default('') }}
+
+      --- STDERR ---
+      {{ script_status.stderr | default('') }}
+    owner: "{{ script_owner }}"
+    group: "{{ script_group }}"
+    mode: "0644"
+
+- name: Fallar si rc != 0
+  ansible.builtin.fail:
+    msg: |
+      Script falló: {{ script }}
+      rc={{ script_status.rc }}
+      stderr={{ script_status.stderr }}
+  when: (script_status.rc | int) != 0

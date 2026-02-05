@@ -1,0 +1,11 @@
+# Ruta del script relativa a ./scripts/ (ej: "bash/hello.sh")
+script: ""
+script_args: ""
+script_env: {}
+script_workdir: "{{ script_workdir_default | default('/tmp') }}"
+script_owner: "root"
+script_group: "root"
+script_mode: "0755"
+
+# Si tu script necesita python3 (ej: scripts/python/*.py), setea true
+ensure_python3: false
